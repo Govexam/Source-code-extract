@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Code Fetcher</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f3ec78, #af4261);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border-radius: 30px;
+            border: none;
+            outline: none;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+        input[type="text"]::placeholder {
+            color: #888;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            background-color: #4caf50;
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            border: none;
+            border-radius: 15px;
+            color: #333;
+            resize: none;
+            background-color: #fff;
+        }
+        #progressBarContainer {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        #progressBar {
+            width: 0;
+            height: 20px;
+            background-color: #4caf50;
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+        #progressPercentage {
+            margin-top: 10px;
+            color: #fff;
+        }
+        .error {
+            color: #ff3333;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Source Code Fetcher</h2>
+        <input type="text" id="urlInput" placeholder="Enter URL here...">
+        <div class="buttons">
+            <button onclick="fetchSourceCode()">Fetch Source Code</button>
+            <button onclick="copyToClipboard()">Copy All</button>
+            <button onclick="downloadSourceCode()">Download</button>
+        </div>
+
+        <textarea id="sourceCodeArea" readonly placeholder="Source code will appear here..."></textarea>
+
+        <!-- Progress bar section -->
+        <div id="progressBarContainer">
+            <div id="progressBar"></div>
+        </div>
+        <p id="progressPercentage">0%</p>
+
+        <p id="errorMessage" class="error"></p>
+    </div>
+
+    <script>
+        // Simulated loading animation for progress bar
+        function simulateProgressBar() {
+            let progressBar = document.getElementById("progressBar");
+            let progressPercentage = document.getElementById("progressPercentage");
+            let width = 0;
+            let interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                } else {
+                    width += 10; // Increase by 10% every 500ms
+                    progressBar.style.width = width + "%";
+                    progressPercentage.textContent = width + "%";
+                }
+            }, 500);
+        }
+
+        function fetchSourceCode() {
+            const url = document.getElementById('urlInput').value;
+            const progressBar = document.getElementById('progressBar');
+            const errorMessage = document.getElementById('errorMessage');
+            const sourceCodeArea = document.getElementById('sourceCodeArea');
+            const progressPercentage = document.getElementById('progressPercentage');
+            
+            errorMessage.textContent = ''; // Clear previous error
+            sourceCodeArea.value = ''; // Clear the textarea
+            progressBar.style.width = '0%'; // Reset the progress bar
+            progressPercentage.textContent = '0%'; // Reset the percentage
+
+            if (!url) {
+                errorMessage.textContent = "Please enter a valid URL.";
+                return;
+            }
+
+            // Start progress bar simulation
+            simulateProgressBar();
+
+            // Fetching source code using AllOrigins API
+            fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch data");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    sourceCodeArea.value = data.contents; // Display source code
+                    progressBar.style.width = '100%'; // Complete progress
+                    progressPercentage.textContent = '100%'; // Set 100% completion
+                })
+                .catch(error => {
+                    progressBar.style.width = '0%'; // Reset on error
+                    progressPercentage.textContent = '0%'; // Reset percentage
+                    errorMessage.textContent = "Failed to fetch source code. Please ensure the URL is valid.";
+                });
+        }
+
+        function copyToClipboard() {
+            const sourceCodeArea = document.getElementById('sourceCodeArea');
+            if (sourceCodeArea.value === '') {
+                alert("No source code to copy!");
+                return;
+            }
+            sourceCodeArea.select();
+            document.execCommand('copy');
+            alert('Source code copied to clipboard!');
+        }
+
+        function downloadSourceCode() {
+            const sourceCode = document.getElementById('sourceCodeArea').value;
+            if (!sourceCode) {
+                alert("Nothing to download.");
+                return;
+            }
+            const blob = new Blob([sourceCode], { type: "text/plain" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "source-code.txt";
+            link.click();
+        }
+    </script>
+
+</body>
+</html>
